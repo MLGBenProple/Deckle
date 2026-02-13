@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'topdeck' => [
+        'key' => env('TOPDECK_API_KEY'),
+    ],
+
 ];
