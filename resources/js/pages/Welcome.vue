@@ -30,6 +30,9 @@ function startHardMode() {
                         <li>Type your guess for the commander and press Enter.</li>
                         <li>Each wrong guess reveals a random card from the decklist, giving you more information.</li>
                         <li>Guess the commander in as few tries as possible!</li>
+                        <li class="text-red-600 dark:text-red-400">
+                            <span class="font-semibold">Hard Mode:</span> no section headers, commander count is hidden, and cards are shuffled in a random order during play.
+                        </li>
                     </ol>
                 </div>
             </div>

@@ -37,6 +37,12 @@ function buildShuffledCards(): Card[] {
 const shuffledCards = props.hardMode ? buildShuffledCards() : [];
 
 const commanderGuess = ref('');
+const commanderInput = ref<HTMLInputElement | null>(null);
+const suggestionResults = ref<string[]>([]);
+const suggestionLoading = ref(false);
+const suggestionOpen = ref(false);
+let suggestionTimer: number | null = null;
+let suggestionAbort: AbortController | null = null;
 const revealedCommanders = reactive(new Set<number>());
 const revealedCards = reactive(new Set<string>());
 const shaking = ref(false);
@@ -114,6 +120,8 @@ function submitGuess() {
     const guess = commanderGuess.value.trim();
     if (!guess) return;
 
+    clearSuggestions();
+
     const matchIndex = commanders.value.findIndex(
         (c, i) => !revealedCommanders.has(i) && isCloseMatch(guess, c.name),
     );
@@ -145,6 +153,70 @@ function submitGuess() {
     }
 }
 
+function clearSuggestions() {
+    suggestionResults.value = [];
+    suggestionLoading.value = false;
+    suggestionOpen.value = false;
+    if (suggestionTimer) {
+        window.clearTimeout(suggestionTimer);
+        suggestionTimer = null;
+    }
+    if (suggestionAbort) {
+        suggestionAbort.abort();
+        suggestionAbort = null;
+    }
+}
+
+function onGuessKeyup() {
+    const query = commanderGuess.value.trim();
+    if (suggestionTimer) {
+        window.clearTimeout(suggestionTimer);
+    }
+    if (query.length < 2) {
+        clearSuggestions();
+        return;
+    }
+
+    suggestionTimer = window.setTimeout(() => {
+        void searchScryfall(query);
+    }, 250);
+}
+
+async function searchScryfall(query: string) {
+    if (suggestionAbort) {
+        suggestionAbort.abort();
+    }
+    suggestionAbort = new AbortController();
+    suggestionLoading.value = true;
+    suggestionOpen.value = true;
+
+    try {
+    const scryfallQuery = `name:${query} (type:creature or type:background)`;
+        const url = `https://api.scryfall.com/cards/search?order=name&unique=cards&q=${encodeURIComponent(scryfallQuery)}`;
+        const response = await fetch(url, { signal: suggestionAbort.signal });
+        if (!response.ok) {
+            throw new Error('Scryfall search failed');
+        }
+        const data = await response.json();
+        const names = (data?.data ?? []).map((card: { name: string }) => card.name);
+    suggestionResults.value = Array.from(new Set(names)).slice(0, 20);
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            return;
+        }
+        suggestionResults.value = [];
+    } finally {
+        suggestionLoading.value = false;
+        suggestionOpen.value = suggestionResults.value.length > 0;
+    }
+}
+
+function selectSuggestion(name: string) {
+    commanderGuess.value = name;
+    clearSuggestions();
+    nextTick(() => commanderInput.value?.focus());
+}
+
 function sectionCardCount(cards: Card[]): number {
     return cards.reduce((sum, c) => sum + c.quantity, 0);
 }
@@ -158,29 +230,43 @@ function scryfallImageUrl(cardName: string): string {
     <Head :title="hardMode ? 'Hard Mode' : 'Commander Tournament'" />
 
     <div class="mx-auto max-w-7xl px-4 py-8">
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold tracking-tight">
-                <span v-if="hardMode" class="text-red-600 dark:text-red-400">Hard Mode</span>
-                <span
-                    class="rounded transition-colors duration-1000"
-                    :class="allCommandersRevealed
-                        ? ''
-                        : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
-                >
-                    {{ tournamentName ?? 'Unknown Tournament' }}
-                </span>
-            </h1>
-            <p v-if="playerName" class="text-sm">
-                Player:
-                <span
-                    class="rounded transition-colors duration-1000"
-                    :class="allCommandersRevealed
-                        ? ''
-                        : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
-                >
-                    {{ playerName }}
-                </span>
-            </p>
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">
+                    <span v-if="hardMode" class="block text-red-600 dark:text-red-400">Hard Mode</span>
+                    <span
+                        class="block rounded transition-colors duration-1000"
+                        :class="allCommandersRevealed
+                            ? ''
+                            : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
+                    >
+                        {{ tournamentName ?? 'Unknown Tournament' }}
+                    </span>
+                </h1>
+                <p v-if="playerName" class="text-sm">
+                    Player:
+                    <span
+                        class="rounded transition-colors duration-1000"
+                        :class="allCommandersRevealed
+                            ? ''
+                            : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
+                    >
+                        {{ playerName }}
+                    </span>
+                </p>
+            </div>
+
+            <div
+                class="w-full max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300"
+            >
+                <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">How to Play</h2>
+                <ol class="list-inside list-decimal space-y-1">
+                    <li>Guess the hidden commander by name.</li>
+                    <li>Wrong guesses reveal a random card from the decklist.</li>
+                    <li>Use card types and counts for clues.</li>
+                    <li>Guess all commanders to win &mdash; or give up in hard mode.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- Normal mode: commander cards shown face-down -->
@@ -231,16 +317,38 @@ function scryfallImageUrl(cardName: string): string {
 
         <!-- Guess input (both modes) -->
         <div v-if="!gameOver" class="mb-6 flex max-w-md items-center gap-3">
-            <input
-                v-model="commanderGuess"
-                type="text"
-                placeholder="Guess a commander..."
-                class="flex-1 rounded-md border bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 dark:bg-gray-800 dark:text-gray-100"
-                :class="shaking
-                    ? 'animate-shake border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-gray-500 focus:ring-gray-500 dark:border-gray-600'"
-                @keydown.enter="submitGuess()"
-            />
+            <div class="relative flex-1">
+                <input
+                    ref="commanderInput"
+                    v-model="commanderGuess"
+                    type="text"
+                    placeholder="Guess a commander..."
+                    class="w-full rounded-md border bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 dark:bg-gray-800 dark:text-gray-100"
+                    :class="shaking
+                        ? 'animate-shake border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-gray-500 focus:ring-gray-500 dark:border-gray-600'"
+                    @keydown.enter="submitGuess()"
+                    @keyup="onGuessKeyup"
+                />
+                <div
+                    v-if="suggestionOpen && (suggestionLoading || suggestionResults.length > 0)"
+                    class="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                >
+                    <div v-if="suggestionLoading" class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                        Searching Scryfall...
+                    </div>
+                    <button
+                        v-for="name in suggestionResults"
+                        :key="name"
+                        type="button"
+                        class="block w-full px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                        @mousedown.prevent
+                        @click="selectSuggestion(name)"
+                    >
+                        {{ name }}
+                    </button>
+                </div>
+            </div>
             <span v-if="incorrectGuesses > 0" class="text-sm text-gray-500">
                 {{ incorrectGuesses }} {{ incorrectGuesses === 1 ? 'guess' : 'guesses' }}
             </span>
@@ -322,16 +430,21 @@ function scryfallImageUrl(cardName: string): string {
             <div class="mx-4 w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl dark:bg-gray-800">
                 <h2 class="mb-2 text-2xl font-bold">Congratulations!</h2>
                 <p class="mb-1 text-gray-600 dark:text-gray-300">
-                    You guessed {{ commanders.length === 1 ? 'the commander' : `all ${commanders.length} commanders` }}
+                    You guessed {{ commanders.length === 1
+                        ? 'the commander'
+                        : (commanders.length === 2 ? 'both commanders' : `all ${commanders.length} commanders`) }}
                 </p>
                 <p class="mb-4 text-gray-600 dark:text-gray-300">
                     <span v-if="incorrectGuesses === 0">with no wrong guesses!</span>
                     <span v-else>in {{ incorrectGuesses }} {{ incorrectGuesses === 1 ? 'guess' : 'guesses' }}!</span>
                 </p>
-                <div class="mb-4 flex justify-center gap-2">
-                    <span v-for="(card, i) in commanders" :key="i" class="text-sm font-medium text-green-600 dark:text-green-400">
-                        {{ card.name }}<span v-if="i < commanders.length - 1" class="text-gray-400"> &amp; </span>
-                    </span>
+                <div class="mb-4 flex items-center justify-center gap-2">
+                    <template v-for="(card, i) in commanders" :key="card.name">
+                        <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                            {{ card.name }}
+                        </span>
+                        <span v-if="i < commanders.length - 1" class="text-sm font-medium text-gray-400 dark:text-gray-500">&amp;</span>
+                    </template>
                 </div>
                 <button
                     class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
