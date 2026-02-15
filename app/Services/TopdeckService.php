@@ -79,7 +79,7 @@ class TopdeckService
             'columns' => [],
             'game' => 'Magic: The Gathering',
             'format' => 'EDH',
-            'participantMin' => 40,
+            'participantMin' => 20,
         ];
         $tournaments = $this->post('/v2/tournaments', $payload);
         if (empty($tournaments) || !is_array($tournaments)) {
