@@ -262,7 +262,7 @@ function scryfallImageUrl(cardName: string): string {
     <Head :title="hardMode ? 'Hard Mode' : 'Commander Tournament'" />
 
     <div class="mx-auto max-w-7xl px-4 py-8 relative">
-        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mr-80 lg:mr-84">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">
                     <span v-if="hardMode" class="block text-red-600 dark:text-red-400">Hard Mode</span>
@@ -385,6 +385,15 @@ function scryfallImageUrl(cardName: string): string {
             </div>
         </div>
 
+        <!-- Hard mode: placeholder box before any commanders are revealed -->
+        <div v-if="hardMode && revealedCommanders.size === 0" class="mb-6">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                <div class="col-span-2 relative aspect-[976/680] overflow-hidden rounded-lg shadow-md bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                    <span class="text-4xl sm:text-5xl font-bold text-gray-500 dark:text-gray-400 select-none">?</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Hard mode: revealed commanders appear as they're guessed -->
         <div v-if="hardMode && revealedCommanders.size > 0" class="mb-6">
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -401,6 +410,9 @@ function scryfallImageUrl(cardName: string): string {
                         <p class="mt-2 text-center text-sm font-medium text-green-600 dark:text-green-400">
                             {{ card.name }}
                         </p>
+                    </div>
+                    <div v-else>
+                        <div class="relative aspect-[488/680] overflow-hidden rounded-lg shadow-md bg-gray-300 dark:bg-gray-700"></div>
                     </div>
                 </div>
             </div>
