@@ -120,7 +120,6 @@ class TopdeckService
 
             try {
                 $tournament = $this->getTournament($selectedTournament['TID']);
-                
                 // Validate tournament details
                 if (!$this->isValidTournamentData($tournament)) {
                     continue; // Try next tournament
@@ -137,10 +136,26 @@ class TopdeckService
                     $totalParticipants = count($allStandings);
                     $playerStanding = $player['standing'] ?? null;
                     
+                    // Check for Moxfield URL in deckObj metadata
+                    $decklist = $player['decklist'] ?? null;
+                    $decklistUrl = null;
+                    
+                    // First check if there's a Moxfield URL in deckObj.metadata.importedFrom
+                    if (isset($player['deckObj']['metadata']['importedFrom']) 
+                        && !empty($player['deckObj']['metadata']['importedFrom'])) {
+                        $decklistUrl = $player['deckObj']['metadata']['importedFrom'];
+                    }
+                    // Fallback: check if decklist field itself is a URL
+                    elseif ($decklist && (filter_var($decklist, FILTER_VALIDATE_URL) || str_starts_with($decklist, 'http'))) {
+                        $decklistUrl = $decklist;
+                        $decklist = null; // Don't return the URL as text content
+                    }
+                    
                     return [
                         'tournament_name' => $selectedTournament['tournamentName'],
                         'player_name' => $player['name'] ?? null,
-                        'player_decklist' => $player['decklist'] ?? null,
+                        'player_decklist' => $decklist,
+                        'decklist_url' => $decklistUrl,
                         'player_standing' => $playerStanding,
                         'total_participants' => $totalParticipants,
                         'tournament_id' => $selectedTournament['TID'],

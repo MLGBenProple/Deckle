@@ -18,6 +18,7 @@ class CommanderTournamentController extends Controller
             'playerStanding' => $game->player_standing,
             'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
+            'decklistUrl' => $game->decklist_url,
         ]);
     }
 
@@ -31,6 +32,7 @@ class CommanderTournamentController extends Controller
             'playerStanding' => $game->player_standing,
             'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
+            'decklistUrl' => $game->decklist_url,
             'hardMode' => true,
         ]);
     }
@@ -50,6 +52,7 @@ class CommanderTournamentController extends Controller
                 'player_standing' => $data['player_standing'],
                 'total_participants' => $data['total_participants'],
                 'decklist' => $data['decklist'],
+                'decklist_url' => $data['decklist_url'],
             ]);
         }
 

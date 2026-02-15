@@ -15,6 +15,7 @@ class DailyGame extends Model
         'player_standing',
         'total_participants',
         'decklist',
+        'decklist_url',
     ];
 
     protected function casts(): array

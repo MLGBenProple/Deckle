@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
     playerStanding: number | null;
     totalParticipants: number | null;
     decklist: Record<string, Card[]>;
+    decklistUrl?: string | null;
     hardMode?: boolean;
 }>(), {
     hardMode: false,
@@ -307,8 +308,21 @@ function scryfallImageUrl(cardName: string): string {
                             ? ''
                             : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
                     >
-                        {{ playerName }}<span v-if="standingDisplay"> ({{ standingDisplay }})</span>
+                        {{ playerName }}
                     </span>
+                    <span v-if="allCommandersRevealed && standingDisplay"> ({{ standingDisplay }})</span>
+                    <a
+                        v-if="allCommandersRevealed && decklistUrl"
+                        :href="decklistUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="ml-2 inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                        <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        View on Moxfield
+                    </a>
                 </p>
                 
                 <!-- Navigation Buttons -->

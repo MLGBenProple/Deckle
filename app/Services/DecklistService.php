@@ -94,6 +94,7 @@ class DecklistService
             'player_standing' => $tournament['player_standing'] ?? null,
             'total_participants' => $tournament['total_participants'] ?? null,
             'decklist' => $decklist,
+            'decklist_url' => $tournament['decklist_url'] ?? null,
         ];
     }
 }
