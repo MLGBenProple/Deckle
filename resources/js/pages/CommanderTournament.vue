@@ -379,7 +379,7 @@ function scryfallImageUrl(cardName: string): string {
                     </div>
                     <div
                         v-else
-                        v-for="(entry, index) in guessLog.slice().reverse()"
+                        v-for="(entry, index) in guessLog"
                         :key="index"
                         class="flex items-center justify-between text-xs"
                     >
