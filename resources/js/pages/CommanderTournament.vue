@@ -51,6 +51,14 @@ const showWinModal = ref(false);
 const gaveUp = ref(false);
 const showGiveUpConfirm = ref(false);
 
+type GuessLogEntry = {
+    guess: string;
+    correct: boolean;
+    revealedCard?: string;
+    timestamp: Date;
+};
+const guessLog = ref<GuessLogEntry[]>([]);
+
 const allCommandersRevealed = computed(() =>
     commanders.value.length > 0 && commanders.value.every((_, i) => revealedCommanders.has(i)),
 );
@@ -137,6 +145,12 @@ function submitGuess() {
     );
 
     if (matchIndex !== -1) {
+        // Correct guess
+        guessLog.value.push({
+            guess,
+            correct: true,
+            timestamp: new Date()
+        });
         revealedCommanders.add(matchIndex);
         commanderGuess.value = '';
     } else {
@@ -145,6 +159,14 @@ function submitGuess() {
         setTimeout(() => (shaking.value = false), 600);
 
         const picked = pickRandomHiddenCard();
+        // Log incorrect guess
+        guessLog.value.push({
+            guess,
+            correct: false,
+            revealedCard: picked || undefined,
+            timestamp: new Date()
+        });
+        
         if (picked) {
             nextTick(() => {
                 const el = document.querySelector(`[data-card="${CSS.escape(picked)}"]`);
@@ -239,7 +261,7 @@ function scryfallImageUrl(cardName: string): string {
 <template>
     <Head :title="hardMode ? 'Hard Mode' : 'Commander Tournament'" />
 
-    <div class="mx-auto max-w-7xl px-4 py-8">
+    <div class="mx-auto max-w-7xl px-4 py-8 relative">
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">
@@ -265,9 +287,12 @@ function scryfallImageUrl(cardName: string): string {
                     </span>
                 </p>
             </div>
+        </div>
 
+        <!-- Absolutely positioned info boxes relative to container -->
+        <div class="absolute right-0 top-8 z-10 flex flex-col gap-4 w-80">
             <div
-                class="w-full max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300"
+                class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-300 backdrop-blur-sm"
             >
                 <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">How to Play</h2>
                 <ol class="list-inside list-decimal space-y-1">
@@ -276,6 +301,38 @@ function scryfallImageUrl(cardName: string): string {
                     <li>Use card types and counts for clues.</li>
                     <li>Guess all commanders to win &mdash; or give up anytime.</li>
                 </ol>
+            </div>
+            
+            <!-- Guess Log -->
+            <div
+                class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800/90 backdrop-blur-sm"
+            >
+                <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">Guess Log</h2>
+                <div class="h-32 space-y-1 overflow-y-auto">
+                    <div v-if="guessLog.length === 0" class="text-xs text-gray-500 dark:text-gray-400 italic">
+                        No guesses yet...
+                    </div>
+                    <div
+                        v-else
+                        v-for="(entry, index) in guessLog.slice().reverse()"
+                        :key="index"
+                        class="flex items-center justify-between text-xs"
+                    >
+                        <span class="truncate font-medium">{{ entry.guess }}</span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span
+                                v-if="entry.correct"
+                                class="inline-block h-2 w-2 rounded-full bg-green-500"
+                                title="Correct guess"
+                            ></span>
+                            <span
+                                v-else
+                                class="inline-block h-2 w-2 rounded-full bg-red-500"
+                                :title="entry.revealedCard ? `Revealed: ${entry.revealedCard}` : 'Incorrect guess'"
+                            ></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -366,9 +423,6 @@ function scryfallImageUrl(cardName: string): string {
             >
                 Guess
             </button>
-            <span v-if="incorrectGuesses > 0" class="text-sm text-gray-500">
-                {{ incorrectGuesses }} {{ incorrectGuesses === 1 ? 'guess' : 'guesses' }}
-            </span>
             <button
                 class="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
                 @click="confirmGiveUp"
