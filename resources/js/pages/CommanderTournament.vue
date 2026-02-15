@@ -331,7 +331,10 @@ function scryfallImageUrl(cardName: string): string {
             <div
                 class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800/90 backdrop-blur-sm"
             >
-                <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">Guess Log</h2>
+                <div class="mb-2 flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Guess Log</h2>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Total: {{ guessLog.length }}</span>
+                </div>
                 <div class="h-32 space-y-1 overflow-y-auto">
                     <div v-if="guessLog.length === 0" class="text-xs text-gray-500 dark:text-gray-400 italic">
                         No guesses yet...
