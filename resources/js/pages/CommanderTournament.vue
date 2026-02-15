@@ -357,10 +357,16 @@ function scryfallImageUrl(cardName: string): string {
                 class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-300 backdrop-blur-sm"
             >
                 <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">How to Play</h2>
-                <ol class="list-inside list-decimal space-y-1">
+                <ol v-if="!hardMode" class="list-inside list-decimal space-y-1">
                     <li>Guess the hidden commander by name.</li>
                     <li>Wrong guesses reveal a random card from the decklist.</li>
                     <li>Use card types and counts for clues.</li>
+                    <li>Guess all commanders to win &mdash; or give up anytime.</li>
+                </ol>
+                <ol v-else class="list-inside list-decimal space-y-1">
+                    <li>Guess the hidden commander(s) by name.</li>
+                    <li>Wrong guesses reveal a random card from the decklist.</li>
+                    <li><strong>Hard Mode:</strong> The number of commanders is hidden, card types are hidden, and cards are shuffled randomly!</li>
                     <li>Guess all commanders to win &mdash; or give up anytime.</li>
                 </ol>
             </div>
