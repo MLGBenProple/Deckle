@@ -201,14 +201,14 @@ async function searchScryfall(query: string) {
     suggestionOpen.value = true;
 
     try {
-    const scryfallQuery = `name:${query} (type:creature or type:background)`;
+    const scryfallQuery = `name:${query} is:commander`;
         const url = `https://api.scryfall.com/cards/search?order=name&unique=cards&q=${encodeURIComponent(scryfallQuery)}`;
         const response = await fetch(url, { signal: suggestionAbort.signal });
         if (!response.ok) {
             throw new Error('Scryfall search failed');
         }
         const data = await response.json();
-        const names = (data?.data ?? []).map((card: { name: string }) => card.name);
+        const names = (data?.data ?? []).map((card: { name: string }) => card.name.split(' // ')[0]);
     suggestionResults.value = Array.from(new Set(names)).slice(0, 20);
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -224,7 +224,7 @@ async function searchScryfall(query: string) {
 function selectSuggestion(name: string) {
     commanderGuess.value = name;
     clearSuggestions();
-    nextTick(() => commanderInput.value?.focus());
+    submitGuess();
 }
 
 function sectionCardCount(cards: Card[]): number {
