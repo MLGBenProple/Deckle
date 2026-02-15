@@ -22,6 +22,7 @@ class GenerateDailyGame extends Command
 
         $modes = ['normal', 'hard'];
         $allExisted = true;
+        $maxCommandRetries = 3;
 
         foreach ($modes as $mode) {
             if (DailyGame::where('date', $dateString)->where('mode', $mode)->exists()) {
@@ -32,10 +33,10 @@ class GenerateDailyGame extends Command
             $allExisted = false;
             $this->info("Generating {$mode} daily game for {$dateString}...");
 
-            $game = $decklistService->fetchRandomGame();
+            $game = $this->fetchGameWithRetry($decklistService, $mode, $maxCommandRetries);
 
             if (empty($game['decklist'])) {
-                $this->error("Failed to fetch a valid decklist for {$mode} mode.");
+                $this->error("Failed to fetch a valid decklist for {$mode} mode after {$maxCommandRetries} attempts.");
                 return self::FAILURE;
             }
 
@@ -47,6 +48,7 @@ class GenerateDailyGame extends Command
                 'player_standing' => $game['player_standing'],
                 'total_participants' => $game['total_participants'],
                 'decklist' => $game['decklist'],
+                'decklist_url' => $game['decklist_url'],
             ]);
 
             $this->info("Daily game ({$mode}) for {$dateString} created successfully.");
@@ -57,5 +59,38 @@ class GenerateDailyGame extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    protected function fetchGameWithRetry(DecklistService $decklistService, string $mode, int $maxRetries): array
+    {
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $this->info("Attempt {$attempt}/{$maxRetries} to fetch {$mode} game...");
+                $game = $decklistService->fetchRandomGame();
+                
+                if (!empty($game['decklist'])) {
+                    $this->info("Successfully fetched {$mode} game on attempt {$attempt}.");
+                    return $game;
+                }
+                
+                $this->warn("Attempt {$attempt}: Received empty decklist, retrying...");
+                
+            } catch (\Exception $e) {
+                $this->warn("Attempt {$attempt} failed: " . $e->getMessage());
+                
+                if ($attempt === $maxRetries) {
+                    $this->error("All {$maxRetries} attempts failed. Last error: " . $e->getMessage());
+                }
+            }
+            
+            // Wait before retrying (exponential backoff)
+            if ($attempt < $maxRetries) {
+                $waitTime = pow(2, $attempt - 1) * 5; // 5, 10, 20 seconds
+                $this->info("Waiting {$waitTime} seconds before retry...");
+                sleep($waitTime);
+            }
+        }
+        
+        return ['decklist' => []];
     }
 }

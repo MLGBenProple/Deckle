@@ -284,7 +284,7 @@ function scryfallImageUrl(cardName: string): string {
 </script>
 
 <template>
-    <Head :title="hardMode ? 'Hard Mode' : 'Commander Tournament'" />
+    <Head :title="hardMode ? 'Hard Mode' : 'Normal Mode'" />
 
     <div class="mx-auto max-w-7xl px-4 py-8 relative">
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:mr-84">
