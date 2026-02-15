@@ -49,6 +49,7 @@ const shaking = ref(false);
 const incorrectGuesses = ref(0);
 const showWinModal = ref(false);
 const gaveUp = ref(false);
+const showGiveUpConfirm = ref(false);
 
 const allCommandersRevealed = computed(() =>
     commanders.value.length > 0 && commanders.value.every((_, i) => revealedCommanders.has(i)),
@@ -72,7 +73,12 @@ function revealAllCards() {
     }
 }
 
+function confirmGiveUp() {
+    showGiveUpConfirm.value = true;
+}
+
 function giveUp() {
+    showGiveUpConfirm.value = false;
     gaveUp.value = true;
     // Reveal all commanders
     commanders.value.forEach((_, i) => revealedCommanders.add(i));
@@ -80,6 +86,10 @@ function giveUp() {
     setTimeout(() => {
         showWinModal.value = true;
     }, 1500);
+}
+
+function cancelGiveUp() {
+    showGiveUpConfirm.value = false;
 }
 
 function normalize(str: string): string {
@@ -264,7 +274,7 @@ function scryfallImageUrl(cardName: string): string {
                     <li>Guess the hidden commander by name.</li>
                     <li>Wrong guesses reveal a random card from the decklist.</li>
                     <li>Use card types and counts for clues.</li>
-                    <li>Guess all commanders to win &mdash; or give up in hard mode.</li>
+                    <li>Guess all commanders to win &mdash; or give up anytime.</li>
                 </ol>
             </div>
         </div>
@@ -360,9 +370,8 @@ function scryfallImageUrl(cardName: string): string {
                 {{ incorrectGuesses }} {{ incorrectGuesses === 1 ? 'guess' : 'guesses' }}
             </span>
             <button
-                v-if="hardMode"
                 class="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
-                @click="giveUp"
+                @click="confirmGiveUp"
             >
                 Give up
             </button>
@@ -482,6 +491,32 @@ function scryfallImageUrl(cardName: string): string {
                 >
                     View Decklist
                 </button>
+            </div>
+        </div>
+    </Transition>
+
+    <!-- Give up confirmation modal -->
+    <Transition name="modal-fade">
+        <div v-if="showGiveUpConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="cancelGiveUp">
+            <div class="mx-4 w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl dark:bg-gray-800">
+                <h2 class="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">Give Up?</h2>
+                <p class="mb-4 text-gray-600 dark:text-gray-300">
+                    Are you sure you want to give up? This will reveal all commanders and cards.
+                </p>
+                <div class="flex gap-3 justify-center">
+                    <button
+                        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-800"
+                        @click="cancelGiveUp"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        @click="giveUp"
+                    >
+                        Give Up
+                    </button>
+                </div>
             </div>
         </div>
     </Transition>
