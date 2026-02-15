@@ -10,10 +10,34 @@ type Card = {
 const props = withDefaults(defineProps<{
     tournamentName: string | null;
     playerName: string | null;
+    playerStanding: number | null;
+    totalParticipants: number | null;
     decklist: Record<string, Card[]>;
     hardMode?: boolean;
 }>(), {
     hardMode: false,
+});
+
+// Format ordinal numbers (1st, 2nd, 3rd, etc.)
+const formatOrdinal = (number: number): string => {
+    let suffix = 'th';
+    
+    if (number % 100 < 11 || number % 100 > 13) {
+        switch (number % 10) {
+            case 1: suffix = 'st'; break;
+            case 2: suffix = 'nd'; break;
+            case 3: suffix = 'rd'; break;
+        }
+    }
+    
+    return number + suffix;
+};
+
+const standingDisplay = computed(() => {
+    if (props.playerStanding && props.totalParticipants) {
+        return `${formatOrdinal(props.playerStanding)}/${props.totalParticipants}`;
+    }
+    return null;
 });
 
 const typeSections = computed(() => {
@@ -283,7 +307,7 @@ function scryfallImageUrl(cardName: string): string {
                             ? ''
                             : 'bg-gray-300 text-gray-300 select-none dark:bg-gray-700 dark:text-gray-700'"
                     >
-                        {{ playerName }}
+                        {{ playerName }}<span v-if="standingDisplay"> ({{ standingDisplay }})</span>
                     </span>
                 </p>
                 

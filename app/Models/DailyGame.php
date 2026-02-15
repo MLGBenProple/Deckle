@@ -12,6 +12,8 @@ class DailyGame extends Model
         'mode',
         'tournament_name',
         'player_name',
+        'player_standing',
+        'total_participants',
         'decklist',
     ];
 

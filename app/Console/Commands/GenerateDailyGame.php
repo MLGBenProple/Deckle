@@ -44,6 +44,8 @@ class GenerateDailyGame extends Command
                 'mode' => $mode,
                 'tournament_name' => $game['tournament_name'],
                 'player_name' => $game['player_name'],
+                'player_standing' => $game['player_standing'],
+                'total_participants' => $game['total_participants'],
                 'decklist' => $game['decklist'],
             ]);
 

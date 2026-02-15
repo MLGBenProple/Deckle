@@ -91,6 +91,8 @@ class DecklistService
         return [
             'tournament_name' => $tournament['tournament_name'] ?? null,
             'player_name' => $tournament['player_name'] ?? null,
+            'player_standing' => $tournament['player_standing'] ?? null,
+            'total_participants' => $tournament['total_participants'] ?? null,
             'decklist' => $decklist,
         ];
     }

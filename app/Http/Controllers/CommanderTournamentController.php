@@ -15,6 +15,8 @@ class CommanderTournamentController extends Controller
         return Inertia::render('CommanderTournament', [
             'tournamentName' => $game->tournament_name,
             'playerName' => $game->player_name,
+            'playerStanding' => $game->player_standing,
+            'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
         ]);
     }
@@ -26,6 +28,8 @@ class CommanderTournamentController extends Controller
         return Inertia::render('CommanderTournament', [
             'tournamentName' => $game->tournament_name,
             'playerName' => $game->player_name,
+            'playerStanding' => $game->player_standing,
+            'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
             'hardMode' => true,
         ]);
@@ -43,6 +47,8 @@ class CommanderTournamentController extends Controller
                 'mode' => $mode,
                 'tournament_name' => $data['tournament_name'],
                 'player_name' => $data['player_name'],
+                'player_standing' => $data['player_standing'],
+                'total_participants' => $data['total_participants'],
                 'decklist' => $data['decklist'],
             ]);
         }

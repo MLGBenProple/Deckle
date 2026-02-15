@@ -127,16 +127,22 @@ class TopdeckService
                 }
 
                 // Filter to players that have a decklist
-                $withDecklists = array_filter($tournament['standings'] ?? [], function ($player) {
+                $allStandings = $tournament['standings'] ?? [];
+                $withDecklists = array_filter($allStandings, function ($player) {
                     return $this->isValidPlayer($player);
                 });
 
                 if (!empty($withDecklists)) {
                     $player = $withDecklists[array_rand($withDecklists)];
+                    $totalParticipants = count($allStandings);
+                    $playerStanding = $player['standing'] ?? null;
+                    
                     return [
                         'tournament_name' => $selectedTournament['tournamentName'],
                         'player_name' => $player['name'] ?? null,
                         'player_decklist' => $player['decklist'] ?? null,
+                        'player_standing' => $playerStanding,
+                        'total_participants' => $totalParticipants,
                         'tournament_id' => $selectedTournament['TID'],
                         'attempt' => $attempt + 1, // For debugging
                     ];
