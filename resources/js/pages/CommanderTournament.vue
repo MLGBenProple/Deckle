@@ -287,7 +287,7 @@ function scryfallImageUrl(cardName: string): string {
     <Head :title="hardMode ? 'Hard Mode' : 'Commander Tournament'" />
 
     <div class="mx-auto max-w-7xl px-4 py-8 relative">
-        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mr-80 lg:mr-84">
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:mr-84">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">
                     <span v-if="hardMode" class="block text-red-600 dark:text-red-400">Hard Mode</span>
@@ -351,8 +351,64 @@ function scryfallImageUrl(cardName: string): string {
             </div>
         </div>
 
-        <!-- Absolutely positioned info boxes relative to container -->
-        <div class="absolute right-0 top-8 z-10 flex flex-col gap-4 w-80">
+        <!-- Mobile info boxes (shown below header on mobile) -->
+        <div class="mb-6 lg:hidden flex flex-col gap-4">
+            <div
+                class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-300 backdrop-blur-sm"
+            >
+                <h2 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">How to Play</h2>
+                <ol v-if="!hardMode" class="list-inside list-decimal space-y-1">
+                    <li>Guess the hidden commander by name.</li>
+                    <li>Wrong guesses reveal a random card from the decklist.</li>
+                    <li>Use card types and counts for clues.</li>
+                    <li>Guess all commanders to win &mdash; or give up anytime.</li>
+                </ol>
+                <ol v-else class="list-inside list-decimal space-y-1">
+                    <li>Guess the hidden commander(s) by name.</li>
+                    <li>Wrong guesses reveal a random card from the decklist.</li>
+                    <li><strong>Hard Mode:</strong> The number of commanders is hidden, card types are hidden, and cards are shuffled randomly!</li>
+                    <li>Guess all commanders to win &mdash; or give up anytime.</li>
+                </ol>
+            </div>
+            
+            <!-- Guess Log -->
+            <div
+                class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800/90 backdrop-blur-sm"
+            >
+                <div class="mb-2 flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Guess Log</h2>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Total: {{ guessLog.length }}</span>
+                </div>
+                <div class="h-32 space-y-1 overflow-y-auto">
+                    <div v-if="guessLog.length === 0" class="text-xs text-gray-500 dark:text-gray-400 italic">
+                        No guesses yet...
+                    </div>
+                    <div
+                        v-else
+                        v-for="(entry, index) in guessLog"
+                        :key="index"
+                        class="flex items-center justify-between text-xs"
+                    >
+                        <span class="truncate font-medium">{{ entry.guess }}</span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span
+                                v-if="entry.correct"
+                                class="inline-block h-2 w-2 rounded-full bg-green-500"
+                                title="Correct guess"
+                            ></span>
+                            <span
+                                v-else
+                                class="inline-block h-2 w-2 rounded-full bg-red-500"
+                                :title="entry.revealedCard ? `Revealed: ${entry.revealedCard}` : 'Incorrect guess'"
+                            ></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop info boxes (absolutely positioned on large screens) -->
+        <div class="hidden lg:flex absolute right-0 top-8 z-10 flex-col gap-4 w-80">
             <div
                 class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-800/90 dark:text-gray-300 backdrop-blur-sm"
             >
