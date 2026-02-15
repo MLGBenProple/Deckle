@@ -63,7 +63,13 @@ class ScryfallService
 
             $data = $response->json();
             foreach ($data['data'] ?? [] as $card) {
-                $typeLine = $card['type_line'] ?? '';
+                // For double-faced cards, use the front face's type_line
+                if (isset($card['card_faces']) && !empty($card['card_faces'])) {
+                    $typeLine = $card['card_faces'][0]['type_line'] ?? '';
+                } else {
+                    $typeLine = $card['type_line'] ?? '';
+                }
+                
                 $category = $this->categorizeType($typeLine);
                 $name = explode(' // ', $card['name'])[0];
                 $typeMap[$name] = $category;
@@ -80,12 +86,12 @@ class ScryfallService
     {
         // Priority order matches common deckbuilding tools
         $categories = [
+            'Land' => 'Lands',
             'Creature' => 'Creatures',
             'Planeswalker' => 'Planeswalkers',
             'Battle' => 'Battles',
             'Instant' => 'Instants',
             'Sorcery' => 'Sorceries',
-            'Land' => 'Lands',
             'Enchantment' => 'Enchantments',
             'Artifact' => 'Artifacts',
         ];
