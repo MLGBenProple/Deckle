@@ -19,6 +19,7 @@ class CommanderTournamentController extends Controller
             'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
             'decklistUrl' => $game->decklist_url,
+            'gameDate' => $game->date->format('F j, Y'),
         ]);
     }
 
@@ -34,6 +35,7 @@ class CommanderTournamentController extends Controller
             'decklist' => $decklistService->sortSections($game->decklist),
             'decklistUrl' => $game->decklist_url,
             'hardMode' => true,
+            'gameDate' => $game->date->format('F j, Y'),
         ]);
     }
 

@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
     decklist: Record<string, Card[]>;
     decklistUrl?: string | null;
     hardMode?: boolean;
+    gameDate?: string;
 }>(), {
     hardMode: false,
 });
@@ -289,6 +290,9 @@ function scryfallImageUrl(cardName: string): string {
     <div class="mx-auto max-w-7xl px-4 py-8 relative">
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:mr-84">
             <div>
+                <div v-if="gameDate" class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Deckle Day: {{ gameDate }}
+                </div>
                 <h1 class="text-2xl font-bold tracking-tight">
                     <span v-if="hardMode" class="block text-red-600 dark:text-red-400">Hard Mode</span>
                     <span
