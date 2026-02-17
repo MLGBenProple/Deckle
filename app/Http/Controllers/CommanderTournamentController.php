@@ -10,58 +10,55 @@ class CommanderTournamentController extends Controller
 {
     /**
      * Display the daily Commander tournament puzzle game in normal difficulty mode.
-     * 
-     * The method handles:
-     * - Daily puzzle generation and caching (one puzzle per day)
-     * - Tournament data formatting for frontend display
-     * - Deck organization using standard Magic card type ordering
-     * - React/Inertia.js data passing for interactive gameplay
-     * 
-     * @param DecklistService $decklistService Service for deck processing and formatting
-     * @return \Inertia\Response Inertia.js response with tournament puzzle data
      */
     public function daily(DecklistService $decklistService)
     {
-        $game = $this->resolveGame($decklistService, 'normal');
-
-        return Inertia::render('CommanderTournament', [
-            'tournamentName' => $game->tournament_name,
-            'playerName' => $game->player_name,
-            'playerStanding' => $game->player_standing,
-            'totalParticipants' => $game->total_participants,
-            'decklist' => $decklistService->sortSections($game->decklist),
-            'decklistUrl' => $game->decklist_url,
-            'gameDate' => $game->date->format('F j, Y'),
-        ]);
+        return $this->showDailyGame($decklistService, 'normal');
     }
 
     /**
      * Display the daily Commander tournament puzzle game in hard difficulty mode.
+     */
+    public function hardDaily(DecklistService $decklistService)
+    {
+        return $this->showDailyGame($decklistService, 'hard');
+    }
+
+    /**
+     * Display the daily Commander tournament puzzle game for the specified difficulty mode.
+     * 
+     * The method handles:
+     * - Daily puzzle generation and caching (one puzzle per day per mode)
+     * - Tournament data formatting for frontend display
+     * - Deck organization using standard Magic card type ordering
+     * - React/Inertia.js data passing for interactive gameplay
      * 
      * Hard mode uses a separate daily game instance, allowing players to
      * complete both normal and hard versions of the daily puzzle if desired.
      * 
-     * The hardMode flag in the response data instructs the frontend React
-     * components to apply appropriate difficulty modifications to the game
-     * interface and scoring system.
-     * 
      * @param DecklistService $decklistService Service for deck processing and formatting
-     * @return \Inertia\Response Inertia.js response with hard mode tournament puzzle data
+     * @param string $mode Difficulty mode ('normal' or 'hard')
+     * @return \Inertia\Response Inertia.js response with tournament puzzle data
      */
-    public function hardDaily(DecklistService $decklistService)
+    protected function showDailyGame(DecklistService $decklistService, string $mode)
     {
-        $game = $this->resolveGame($decklistService, 'hard');
+        $game = $this->resolveGame($decklistService, $mode);
 
-        return Inertia::render('CommanderTournament', [
+        $data = [
             'tournamentName' => $game->tournament_name,
             'playerName' => $game->player_name,
             'playerStanding' => $game->player_standing,
             'totalParticipants' => $game->total_participants,
             'decklist' => $decklistService->sortSections($game->decklist),
             'decklistUrl' => $game->decklist_url,
-            'hardMode' => true,
             'gameDate' => $game->date->format('F j, Y'),
-        ]);
+        ];
+
+        if ($mode === 'hard') {
+            $data['hardMode'] = true;
+        }
+
+        return Inertia::render('CommanderTournament', $data);
     }
 
     /**

@@ -132,31 +132,22 @@ class DecklistService
      * Process raw decklist text into a fully structured and categorized deck.
      * 
      * This is the primary method for converting tournament decklist data
-     * into the application's standard deck format. It combines parsing,
-     * type categorization, and section ordering into a single operation.
-     * 
-     * The method handles the complete decklist processing pipeline:
-     * 1. Parse raw text into structured card entries
-     * 2. Preserve Commander section (if present) for format identification
-     * 3. Group mainboard cards by Magic card types using Scryfall API
-     * 4. Apply standard section ordering for consistent presentation
-     * 
-     * This processed format is suitable for:
-     * - Deck visualization components
-     * - Statistical analysis (mana curve, type distribution)
-     * - Game mechanics (daily puzzle generation)
-     * - Export to other deckbuilding formats
-     * 
-     * @param string $rawDecklist Raw decklist text from tournament or user input
-     * @return array Fully processed decklist:
-     *               ['Commanders' => [...], 'Creatures' => [...], etc.]
-     *               Sections appear only if they contain cards
+     * into the application's standard deck format.
      */
     public function buildDecklist(string $rawDecklist): array
     {
         $parsed = $this->parseDecklist($rawDecklist);
+        
+        return $this->processParsedDecklist($parsed);
+    }
 
+    /**
+     * Process parsed decklist into final format with proper section organization.
+     */
+    protected function processParsedDecklist(array $parsed): array
+    {
         $decklist = [];
+        
         if (!empty($parsed['Commanders'])) {
             $decklist['Commanders'] = $parsed['Commanders'];
         }
