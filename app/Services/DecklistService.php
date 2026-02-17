@@ -9,6 +9,24 @@ class DecklistService
         protected ScryfallService $scryfall,
     ) {}
 
+    /**
+     * Parse a raw decklist string into a structured array format.
+     * 
+     * This method processes decklist text using common MTG decklist formats,
+     * supporting both mainboard and sideboard sections. It handles various
+     * formatting conventions used by tournament organizers and deckbuilding tools.
+     * 
+     * The parser recognizes:
+     * - Section headers wrapped in tildes: ~~Mainboard~~, ~~Sideboard~~, ~~Commanders~~
+     * - Card entries in "quantity cardname" format: "4 Lightning Bolt"
+     * - Double-faced card names (extracts front face only)
+     * - Empty lines and whitespace (ignored)
+     * 
+     * @param string $raw Raw decklist text from tournament data or user input
+     * @return array Structured decklist with sections as keys:
+     *               ['Mainboard' => [['quantity' => 4, 'name' => 'Lightning Bolt']], ...]
+     *               ['Sideboard' => [...], 'Commanders' => [...], etc.]
+     */
     public function parseDecklist(string $raw): array
     {
         $decklist = [];
@@ -35,8 +53,41 @@ class DecklistService
         return $decklist;
     }
 
+    /**
+     * Standard section ordering for Magic: The Gathering decklists.
+     * 
+     * This constant defines the canonical display order for deck sections,
+     * following competitive Magic conventions. The order prioritizes:
+     * - Commanders first (for Commander format identification)
+     * - Permanents by strategic importance (creatures, planeswalkers, etc.)
+     * - Spells by timing (instants before sorceries)
+     * - Utility cards (enchantments, artifacts) 
+     * - Mana base (lands)
+     * - Edge cases (other/unknown types)
+     * 
+     * This ordering is used by deck visualization tools and tournament software
+     * to provide consistent, readable deck presentations.
+     */
     public const SECTION_ORDER = ['Commanders', 'Creatures', 'Planeswalkers', 'Battles', 'Instants', 'Sorceries', 'Enchantments', 'Artifacts', 'Lands', 'Other'];
 
+    /**
+     * Group mainboard cards by their Magic: The Gathering card types.
+     * 
+     * This method takes a flat list of mainboard cards and organizes them
+     * into type-based categories for better deck analysis and presentation.
+     * It leverages the Scryfall API to determine accurate card types,
+     * handling edge cases like:
+     * - Multi-type cards ("Artifact Creature" becomes "Creatures")
+     * - Double-faced cards (uses front face type)
+     * - Unknown/new card types (defaults to "Other")
+     * 
+     * The grouping enables features like mana curve analysis, deck composition
+     * statistics, and organized deck display interfaces.
+     * 
+     * @param array $mainboard Array of card objects: [['quantity' => int, 'name' => string], ...]
+     * @return array Cards grouped by type in standardized order:
+     *               ['Creatures' => [...], 'Instants' => [...], etc.]
+     */
     public function groupByType(array $mainboard): array
     {
         $cardNames = array_map(fn ($card) => $card['name'], $mainboard);
@@ -51,6 +102,20 @@ class DecklistService
         return $this->sortSections($grouped);
     }
 
+    /**
+     * Reorganize decklist sections according to standard Magic: The Gathering ordering.
+     * 
+     * This method ensures consistent section presentation across the application
+     * by reordering deck sections to match tournament and deckbuilding conventions.
+     * It preserves all existing sections while applying the standard order defined
+     * in SECTION_ORDER constant.
+     * 
+     * Sections not present in the decklist are omitted from the result.
+     * This allows for flexible deck formats while maintaining consistent presentation.
+     * 
+     * @param array $decklist Associative array with section names as keys
+     * @return array Same decklist with sections reordered according to SECTION_ORDER
+     */
     public function sortSections(array $decklist): array
     {
         $sorted = [];
@@ -63,6 +128,30 @@ class DecklistService
         return $sorted;
     }
 
+    /**
+     * Process raw decklist text into a fully structured and categorized deck.
+     * 
+     * This is the primary method for converting tournament decklist data
+     * into the application's standard deck format. It combines parsing,
+     * type categorization, and section ordering into a single operation.
+     * 
+     * The method handles the complete decklist processing pipeline:
+     * 1. Parse raw text into structured card entries
+     * 2. Preserve Commander section (if present) for format identification
+     * 3. Group mainboard cards by Magic card types using Scryfall API
+     * 4. Apply standard section ordering for consistent presentation
+     * 
+     * This processed format is suitable for:
+     * - Deck visualization components
+     * - Statistical analysis (mana curve, type distribution)
+     * - Game mechanics (daily puzzle generation)
+     * - Export to other deckbuilding formats
+     * 
+     * @param string $rawDecklist Raw decklist text from tournament or user input
+     * @return array Fully processed decklist:
+     *               ['Commanders' => [...], 'Creatures' => [...], etc.]
+     *               Sections appear only if they contain cards
+     */
     public function buildDecklist(string $rawDecklist): array
     {
         $parsed = $this->parseDecklist($rawDecklist);
@@ -79,6 +168,35 @@ class DecklistService
         return $decklist;
     }
 
+    /**
+     * Fetch and process a random competitive Commander tournament deck.
+     * 
+     * This method coordinates with the TopdeckService to retrieve a random
+     * cEDH (competitive Commander) tournament result and processes it into
+     * the application's standard format for daily puzzle games.
+     * 
+     * The method handles the complete tournament data pipeline:
+     * 1. Requests a random tournament from TopdeckService
+     * 2. Processes the raw decklist text through buildDecklist()
+     * 3. Extracts relevant tournament and player metadata
+     * 4. Returns structured data suitable for game creation
+     * 
+     * This data is typically used to generate daily puzzle games where
+     * players guess tournament performance based on deck composition.
+     * 
+     * Error handling is delegated to TopdeckService, which implements
+     * comprehensive retry logic and validation.
+     * 
+     * @return array Complete tournament game data:
+     *               [
+     *                 'tournament_name' => string,
+     *                 'player_name' => string,
+     *                 'player_standing' => int,
+     *                 'total_participants' => int,
+     *                 'decklist' => array, // Processed through buildDecklist()
+     *                 'decklist_url' => string|null // Original Moxfield/archiving URL
+     *               ]
+     */
     public function fetchRandomGame(): array
     {
         $tournament = $this->topdeck->getRandomCommanderTournament();
