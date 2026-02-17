@@ -8,37 +8,9 @@ class ScryfallService
 {
     protected string $baseUrl = 'https://api.scryfall.com';
 
-    /**
-     * Get card data by exact name.
-     */
-    public function getCardByName(string $name): array
-    {
-        $response = Http::get($this->baseUrl . '/cards/named', [
-            'exact' => $name,
-        ]);
-        $response->throw();
 
-        return $response->json();
-    }
 
-    /**
-     * Get the image URL for a card by name.
-     */
-    public function getCardImage(string $name, string $version = 'normal'): string
-    {
-        $card = $this->getCardByName($name);
 
-        // Double-faced cards store images on each face instead of at the top level
-        if (isset($card['image_uris'][$version])) {
-            return $card['image_uris'][$version];
-        }
-
-        if (isset($card['card_faces'][0]['image_uris'][$version])) {
-            return $card['card_faces'][0]['image_uris'][$version];
-        }
-
-        throw new \RuntimeException("No image found for card: {$name}");
-    }
 
     /**
      * Look up card types for a list of card names using the collection endpoint.
@@ -105,31 +77,4 @@ class ScryfallService
         return 'Other';
     }
 
-    /**
-     * Get image URLs for an entire decklist.
-     *
-     * Expects the decklist format from TopdeckService:
-     * ['Commanders' => [['name' => '...'], ...], 'Mainboard' => [['name' => '...'], ...]]
-     *
-     * Respects Scryfall's rate limit of ~100ms between requests.
-     */
-    public function getDecklistImages(array $decklist, string $version = 'normal'): array
-    {
-        $images = [];
-
-        foreach ($decklist as $section => $cards) {
-            foreach ($cards as $card) {
-                $name = $card['name'];
-                $images[$section][] = [
-                    'name' => $name,
-                    'quantity' => $card['quantity'] ?? 1,
-                    'image' => $this->getCardImage($name, $version),
-                ];
-
-                usleep(100_000); // 100ms delay per Scryfall rate limit
-            }
-        }
-
-        return $images;
-    }
 }
