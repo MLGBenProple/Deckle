@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\DailyGame;
+
 class DecklistService
 {
     public function __construct(
@@ -167,10 +169,11 @@ class DecklistService
      * the application's standard format for daily puzzle games.
      * 
      * The method handles the complete tournament data pipeline:
-     * 1. Requests a random tournament from TopdeckService
-     * 2. Processes the raw decklist text through buildDecklist()
-     * 3. Extracts relevant tournament and player metadata
-     * 4. Returns structured data suitable for game creation
+     * 1. Builds exclusion list from yesterday's games and today's other mode
+     * 2. Requests a random tournament from TopdeckService (excluding repeat commanders)
+     * 3. Processes the raw decklist text through buildDecklist()
+     * 4. Extracts relevant tournament and player metadata
+     * 5. Returns structured data suitable for game creation
      * 
      * This data is typically used to generate daily puzzle games where
      * players guess tournament performance based on deck composition.
@@ -178,6 +181,8 @@ class DecklistService
      * Error handling is delegated to TopdeckService, which implements
      * comprehensive retry logic and validation.
      * 
+     * @param \Carbon\Carbon|null $forDate The date being generated for (defaults to today)
+     * @param array $additionalExclusions Extra commander keys to exclude beyond auto-detected ones
      * @return array Complete tournament game data:
      *               [
      *                 'tournament_name' => string,
@@ -185,12 +190,14 @@ class DecklistService
      *                 'player_standing' => int,
      *                 'total_participants' => int,
      *                 'decklist' => array, // Processed through buildDecklist()
-     *                 'decklist_url' => string|null // Original Moxfield/archiving URL
+     *                 'decklist_url' => string|null, // Original Moxfield/archiving URL
+     *                 'commander_key' => string|null // Normalized commander key for exclusion tracking
      *               ]
      */
-    public function fetchRandomGame(): array
+    public function fetchRandomGame(?\Carbon\Carbon $forDate = null, array $additionalExclusions = []): array
     {
-        $tournament = $this->topdeck->getRandomCommanderTournament();
+        $excludedCommanders = $this->buildExcludedCommanders($forDate, $additionalExclusions);
+        $tournament = $this->topdeck->getRandomCommanderTournament($excludedCommanders);
 
         $decklist = [];
         if (!empty($tournament['player_decklist'])) {
@@ -204,6 +211,44 @@ class DecklistService
             'total_participants' => $tournament['total_participants'] ?? null,
             'decklist' => $decklist,
             'decklist_url' => $tournament['decklist_url'] ?? null,
+            'commander_key' => $tournament['commander_key'] ?? null,
         ];
+    }
+
+    /**
+     * Build the list of commander keys to exclude from selection.
+     * 
+     * Automatically excludes:
+     * - Yesterday's commanders (both modes) to avoid day-to-day repeats
+     * - The target date's other mode commander to ensure normal/hard have different commanders
+     * 
+     * @param \Carbon\Carbon|null $forDate The date being generated for (defaults to today)
+     * @param array $additionalExclusions Extra commander keys to add to the exclusion list
+     * @return array Combined list of commander keys to exclude
+     */
+    protected function buildExcludedCommanders(?\Carbon\Carbon $forDate = null, array $additionalExclusions = []): array
+    {
+        $targetDate = $forDate ?? today();
+        $excluded = $additionalExclusions;
+
+        // Exclude yesterday's commanders (both modes) relative to target date
+        $yesterdaysGames = DailyGame::where('date', $targetDate->copy()->subDay())->get();
+        foreach ($yesterdaysGames as $game) {
+            $commanderKey = $this->topdeck->getCommanderKeyFromDecklist($game->decklist ?? []);
+            if ($commanderKey && !in_array($commanderKey, $excluded, true)) {
+                $excluded[] = $commanderKey;
+            }
+        }
+
+        // Exclude target date's other mode commander (if any mode already generated)
+        $targetDaysGames = DailyGame::where('date', $targetDate)->get();
+        foreach ($targetDaysGames as $game) {
+            $commanderKey = $this->topdeck->getCommanderKeyFromDecklist($game->decklist ?? []);
+            if ($commanderKey && !in_array($commanderKey, $excluded, true)) {
+                $excluded[] = $commanderKey;
+            }
+        }
+
+        return $excluded;
     }
 }

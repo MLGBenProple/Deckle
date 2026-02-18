@@ -33,7 +33,7 @@ class GenerateDailyGame extends Command
             $allExisted = false;
             $this->info("Generating {$mode} daily game for {$dateString}...");
 
-            $game = $this->fetchGameWithRetry($decklistService, $mode, $maxCommandRetries);
+            $game = $this->fetchGameWithRetry($decklistService, $mode, $maxCommandRetries, $date);
 
             if (empty($game['decklist'])) {
                 $this->error("Failed to fetch a valid decklist for {$mode} mode after {$maxCommandRetries} attempts.");
@@ -52,6 +52,10 @@ class GenerateDailyGame extends Command
             ]);
 
             $this->info("Daily game ({$mode}) for {$dateString} created successfully.");
+            
+            if (!empty($game['commander_key'])) {
+                $this->info("Commander: {$game['commander_key']}");
+            }
         }
 
         if ($allExisted) {
@@ -61,12 +65,12 @@ class GenerateDailyGame extends Command
         return self::SUCCESS;
     }
 
-    protected function fetchGameWithRetry(DecklistService $decklistService, string $mode, int $maxRetries): array
+    protected function fetchGameWithRetry(DecklistService $decklistService, string $mode, int $maxRetries, \Carbon\Carbon $date): array
     {
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 $this->info("Attempt {$attempt}/{$maxRetries} to fetch {$mode} game...");
-                $game = $decklistService->fetchRandomGame();
+                $game = $decklistService->fetchRandomGame($date);
                 
                 if (!empty($game['decklist'])) {
                     $this->info("Successfully fetched {$mode} game on attempt {$attempt}.");

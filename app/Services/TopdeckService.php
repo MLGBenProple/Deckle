@@ -43,8 +43,10 @@ class TopdeckService
 
     /**
      * Select and return a random competitive Commander tournament with valid deck data.
+     *
+     * @param array $excludedCommanders Array of commander keys to exclude (e.g., ['Tymna the Weaver / Kraum, Ludevic's Opus'])
      */
-    public function getRandomCommanderTournament()
+    public function getRandomCommanderTournament(array $excludedCommanders = [])
     {
         $cedhTournaments = $this->getCedhTournamentList();
         if (empty($cedhTournaments)) {
@@ -68,7 +70,7 @@ class TopdeckService
                     continue;
                 }
 
-                $playerData = $this->extractPlayerData($tournament, $selectedTournament);
+                $playerData = $this->extractPlayerData($tournament, $selectedTournament, $excludedCommanders);
                 if ($playerData) {
                     $playerData['attempt'] = $attempt + 1;
                     return $playerData;
@@ -93,8 +95,10 @@ class TopdeckService
      * commander group is selected, and finally a random player from that group.
      * This ensures equal representation across commander archetypes regardless
      * of their popularity in the tournament.
+     *
+     * @param array $excludedCommanders Commander keys to exclude from selection
      */
-    protected function extractPlayerData(array $tournament, array $selectedTournament): ?array
+    protected function extractPlayerData(array $tournament, array $selectedTournament, array $excludedCommanders = []): ?array
     {
         $allStandings = $tournament['standings'] ?? [];
         $withDecklists = array_filter($allStandings, [$this, 'isValidPlayer']);
@@ -107,11 +111,24 @@ class TopdeckService
         $commanderGroups = $this->groupPlayersByCommander($withDecklists);
         if (empty($commanderGroups)) {
             return null;
-            }
+        }
+
+        // Filter out excluded commanders
+        if (!empty($excludedCommanders)) {
+            $commanderGroups = array_filter(
+                $commanderGroups,
+                fn($key) => !in_array($key, $excludedCommanders, true),
+                ARRAY_FILTER_USE_KEY
+            );
             
-            // Select a random commander group, then a random player from that group
-            $randomCommanderKey = array_rand($commanderGroups);
-            $playersWithCommander = $commanderGroups[$randomCommanderKey];
+            if (empty($commanderGroups)) {
+                return null;
+            }
+        }
+            
+        // Select a random commander group, then a random player from that group
+        $randomCommanderKey = array_rand($commanderGroups);
+        $playersWithCommander = $commanderGroups[$randomCommanderKey];
 
         $player = $playersWithCommander[array_rand($playersWithCommander)];
 
@@ -128,6 +145,7 @@ class TopdeckService
             'player_standing' => $playerStanding,
             'total_participants' => $totalParticipants,
             'tournament_id' => $selectedTournament['TID'],
+            'commander_key' => $randomCommanderKey,
         ];
     }
 
@@ -260,5 +278,34 @@ class TopdeckService
         }
         
         return $response;
+    }
+
+    /**
+     * Get a normalized commander key from a processed decklist array.
+     * 
+     * This method extracts commander names from a structured decklist
+     * and returns a normalized key (alphabetically sorted for partner pairs).
+     * Useful for comparing commanders across different decklists.
+     * 
+     * @param array $decklist Processed decklist with 'Commanders' section
+     * @return string|null Normalized commander key or null if no commanders found
+     */
+    public function getCommanderKeyFromDecklist(array $decklist): ?string
+    {
+        if (empty($decklist['Commanders'])) {
+            return null;
+        }
+
+        $commanders = array_map(
+            fn($card) => $card['name'],
+            $decklist['Commanders']
+        );
+
+        if (empty($commanders)) {
+            return null;
+        }
+
+        sort($commanders);
+        return implode(' / ', $commanders);
     }
 }
