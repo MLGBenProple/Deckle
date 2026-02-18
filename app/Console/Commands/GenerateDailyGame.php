@@ -44,6 +44,7 @@ class GenerateDailyGame extends Command
                 'date' => $dateString,
                 'mode' => $mode,
                 'tournament_name' => $game['tournament_name'],
+                'tournament_id' => $game['tournament_id'],
                 'player_name' => $game['player_name'],
                 'player_standing' => $game['player_standing'],
                 'total_participants' => $game['total_participants'],
