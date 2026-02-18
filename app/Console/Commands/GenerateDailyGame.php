@@ -53,10 +53,6 @@ class GenerateDailyGame extends Command
             ]);
 
             $this->info("Daily game ({$mode}) for {$dateString} created successfully.");
-            
-            if (!empty($game['commander_key'])) {
-                $this->info("Commander: {$game['commander_key']}");
-            }
         }
 
         if ($allExisted) {
