@@ -65,7 +65,7 @@ class GenerateDailyGame extends Command
         return self::SUCCESS;
     }
 
-    protected function fetchGameWithRetry(DecklistService $decklistService, string $mode, int $maxRetries, \Carbon\Carbon $date): array
+    protected function fetchGameWithRetry(DecklistService $decklistService, string $mode, int $maxRetries, \Carbon\CarbonInterface $date): array
     {
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
