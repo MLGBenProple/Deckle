@@ -9,6 +9,7 @@ type Card = {
 
 const props = withDefaults(defineProps<{
     tournamentName: string | null;
+    tournamentId?: string | null;
     playerName: string | null;
     playerStanding: number | null;
     totalParticipants: number | null;
@@ -19,6 +20,10 @@ const props = withDefaults(defineProps<{
 }>(), {
     hardMode: false,
 });
+
+const tournamentUrl = computed(() => 
+    props.tournamentId ? `https://topdeck.gg/event/${props.tournamentId}` : null
+);
 
 // Format ordinal numbers (1st, 2nd, 3rd, etc.)
 const formatOrdinal = (number: number): string => {
@@ -315,19 +320,35 @@ function scryfallImageUrl(cardName: string): string {
                         {{ playerName }}
                     </span>
                     <span v-if="allCommandersRevealed && standingDisplay"> ({{ standingDisplay }})</span>
+                </p>
+                
+                <!-- External Links -->
+                <div v-if="allCommandersRevealed && (tournamentUrl || decklistUrl)" class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                     <a
-                        v-if="allCommandersRevealed && decklistUrl"
+                        v-if="tournamentUrl"
+                        :href="tournamentUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                        <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        View on Topdeck
+                    </a>
+                    <a
+                        v-if="decklistUrl"
                         :href="decklistUrl"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="ml-2 inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                        class="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                         <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
                         View on Moxfield
                     </a>
-                </p>
+                </div>
                 
                 <!-- Navigation Buttons -->
                 <div class="mt-4 flex flex-wrap gap-2">

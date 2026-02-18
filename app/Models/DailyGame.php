@@ -28,6 +28,7 @@ class DailyGame extends Model
         'date',
         'mode',
         'tournament_name',
+        'tournament_id',
         'player_name',
         'player_standing',
         'total_participants',

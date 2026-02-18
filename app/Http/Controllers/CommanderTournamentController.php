@@ -46,6 +46,7 @@ class CommanderTournamentController extends Controller
 
         $data = [
             'tournamentName' => $game->tournament_name,
+            'tournamentId' => $game->tournament_id,
             'playerName' => $game->player_name,
             'playerStanding' => $game->player_standing,
             'totalParticipants' => $game->total_participants,
@@ -96,6 +97,7 @@ class CommanderTournamentController extends Controller
                 'date' => today(),
                 'mode' => $mode,
                 'tournament_name' => $data['tournament_name'],
+                'tournament_id' => $data['tournament_id'],
                 'player_name' => $data['player_name'],
                 'player_standing' => $data['player_standing'],
                 'total_participants' => $data['total_participants'],
