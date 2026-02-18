@@ -9,6 +9,17 @@ class ScryfallService
     protected string $baseUrl = 'https://api.scryfall.com';
 
     /**
+     * Create an HTTP client with required Scryfall headers.
+     */
+    protected function http(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withHeaders([
+            'User-Agent' => 'Deckle/1.0',
+            'Accept' => 'application/json',
+        ]);
+    }
+
+    /**
      * Retrieve and categorize Magic: The Gathering card types for multiple cards efficiently.
      * 
      * This method uses Scryfall's collection endpoint to batch lookup card information,
@@ -39,7 +50,7 @@ class ScryfallService
             }
 
             $identifiers = array_map(fn (string $name) => ['name' => $name], $chunk);
-            $response = Http::post($this->baseUrl . '/cards/collection', [
+            $response = $this->http()->post($this->baseUrl . '/cards/collection', [
                 'identifiers' => $identifiers,
             ]);
             $response->throw();
