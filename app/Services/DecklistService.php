@@ -194,7 +194,7 @@ class DecklistService
      *                 'commander_key' => string|null // Normalized commander key for exclusion tracking
      *               ]
      */
-    public function fetchRandomGame(?\Carbon\Carbon $forDate = null, array $additionalExclusions = []): array
+    public function fetchRandomGame(?\Carbon\CarbonInterface $forDate = null, array $additionalExclusions = []): array
     {
         $excludedCommanders = $this->buildExcludedCommanders($forDate, $additionalExclusions);
         $tournament = $this->topdeck->getRandomCommanderTournament($excludedCommanders);
@@ -223,11 +223,11 @@ class DecklistService
      * - Yesterday's commanders (both modes) to avoid day-to-day repeats
      * - The target date's other mode commander to ensure normal/hard have different commanders
      * 
-     * @param \Carbon\Carbon|null $forDate The date being generated for (defaults to today)
+     * @param \Carbon\CarbonInterface|null $forDate The date being generated for (defaults to today)
      * @param array $additionalExclusions Extra commander keys to add to the exclusion list
      * @return array Combined list of commander keys to exclude
      */
-    protected function buildExcludedCommanders(?\Carbon\Carbon $forDate = null, array $additionalExclusions = []): array
+    protected function buildExcludedCommanders(?\Carbon\CarbonInterface $forDate = null, array $additionalExclusions = []): array
     {
         $targetDate = $forDate ?? today();
         $excluded = $additionalExclusions;
