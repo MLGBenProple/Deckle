@@ -88,6 +88,11 @@ class TopdeckService
 
     /**
      * Extract player data from a tournament, handling decklist and URL parsing.
+     * 
+     * Players are grouped by commander/commander pairing first, then a random
+     * commander group is selected, and finally a random player from that group.
+     * This ensures equal representation across commander archetypes regardless
+     * of their popularity in the tournament.
      */
     protected function extractPlayerData(array $tournament, array $selectedTournament): ?array
     {
@@ -98,7 +103,18 @@ class TopdeckService
             return null;
         }
 
-        $player = $withDecklists[array_rand($withDecklists)];
+        // Group players by commander(s) to equalize selection across archetypes
+        $commanderGroups = $this->groupPlayersByCommander($withDecklists);
+        if (empty($commanderGroups)) {
+            return null;
+            }
+            
+            // Select a random commander group, then a random player from that group
+            $randomCommanderKey = array_rand($commanderGroups);
+            $playersWithCommander = $commanderGroups[$randomCommanderKey];
+
+        $player = $playersWithCommander[array_rand($playersWithCommander)];
+
         $totalParticipants = count($allStandings);
         $playerStanding = $player['standing'] ?? null;
         
@@ -113,6 +129,71 @@ class TopdeckService
             'total_participants' => $totalParticipants,
             'tournament_id' => $selectedTournament['TID'],
         ];
+    }
+
+    /**
+     * Group players by their commander or commander pairing.
+     * 
+     * Extracts commander names from each player's decklist and creates
+     * a normalized key (alphabetically sorted for partner pairs).
+     * 
+     * @param array $players Array of player standings with decklists
+     * @return array Players grouped by commander key
+     */
+    protected function groupPlayersByCommander(array $players): array
+    {
+        $groups = [];
+        
+        foreach ($players as $player) {
+            $commanders = $this->extractCommanders($player['decklist'] ?? '');
+            
+            if (empty($commanders)) {
+                // Put players without identifiable commanders in an "Unknown" group
+                $key = 'Unknown';
+            } else {
+                // Sort alphabetically to normalize partner pairs (Tymna/Kraum = Kraum/Tymna)
+                sort($commanders);
+                $key = implode(' / ', $commanders);
+            }
+            
+            $groups[$key][] = $player;
+        }
+        
+        return $groups;
+    }
+
+    /**
+     * Extract commander names from a raw decklist string.
+     * 
+     * Parses the decklist looking for a ~~Commanders~~ section and
+     * extracts card names from that section.
+     * 
+     * @param string $decklist Raw decklist text
+     * @return array List of commander card names
+     */
+    protected function extractCommanders(string $decklist): array
+    {
+        $commanders = [];
+        $lines = explode('\n', $decklist);
+        $inCommanderSection = false;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            
+            if (preg_match('/^~~(.+)~~$/', $line, $matches)) {
+                $section = trim($matches[1]);
+                $inCommanderSection = (strcasecmp($section, 'Commanders') === 0);
+                continue;
+            }
+            
+            if ($inCommanderSection && preg_match('/^(\d+)\s+(.+)$/', $line, $matches)) {
+                // Extract card name, handling double-faced cards
+                $cardName = explode(' // ', stripslashes($matches[2]))[0];
+                $commanders[] = trim($cardName);
+            }
+        }
+
+        return $commanders;
     }
 
     /**
