@@ -724,6 +724,13 @@ function scryfallImageUrl(cardName: string): string {
                                 class="absolute inset-0 bg-gray-300 dark:bg-gray-700"
                             ></div>
                         </Transition>
+                        <!-- Quantity badge -->
+                        <div
+                            v-if="card.quantity > 1 && revealedCards.has(card.name)"
+                            class="absolute top-3 right-3 flex h-10 min-w-10 items-center justify-center rounded-md bg-[#0a0a0a]/55 px-3 py-1 text-base font-bold text-white"
+                        >
+                            ×{{ card.quantity }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -752,6 +759,13 @@ function scryfallImageUrl(cardName: string): string {
                             class="absolute inset-0 bg-gray-300 dark:bg-gray-700"
                         ></div>
                     </Transition>
+                    <!-- Quantity badge -->
+                    <div
+                        v-if="card.quantity > 1 && revealedCards.has(card.name)"
+                        class="absolute top-3 right-3 flex h-10 min-w-10 items-center justify-center rounded-md bg-[#0a0a0a]/55 px-3 py-1 text-base font-bold text-white"
+                    >
+                        ×{{ card.quantity }}
+                    </div>
                 </div>
             </div>
         </div>
