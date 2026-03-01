@@ -47,6 +47,7 @@ class CommanderTournamentController extends Controller
             'decklist' => $decklistService->sortSections($game->decklist),
             'decklistUrl' => $game->decklist_url,
             'gameDate' => $game->date->format('F j, Y'),
+            'gameDateKey' => $game->date->format('Y-m-d'),
             'isPreviousDay' => true,
         ];
 
@@ -102,6 +103,7 @@ class CommanderTournamentController extends Controller
             'decklist' => $decklistService->sortSections($game->decklist),
             'decklistUrl' => $game->decklist_url,
             'gameDate' => $game->date->format('F j, Y'),
+            'gameDateKey' => $game->date->format('Y-m-d'),
         ];
 
         if ($mode === 'hard') {

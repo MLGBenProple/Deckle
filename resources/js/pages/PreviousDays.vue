@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+import { getCompletionStatus, type CompletionStatus } from '@/composables/useGameState';
 
 type GameDay = {
     date: string;
@@ -7,9 +9,24 @@ type GameDay = {
     modes: string[];
 };
 
-defineProps<{
+const props = defineProps<{
     games: GameDay[];
 }>();
+
+const completionData = ref<Map<string, CompletionStatus>>(new Map());
+
+onMounted(() => {
+    // Load completion status for all games
+    const data = new Map<string, CompletionStatus>();
+    for (const game of props.games) {
+        data.set(game.date, getCompletionStatus(game.date));
+    }
+    completionData.value = data;
+});
+
+function isCompleted(date: string, mode: 'normal' | 'hard'): boolean {
+    return !!completionData.value.get(date)?.[mode]?.completed;
+}
 </script>
 
 <template>
@@ -59,16 +76,28 @@ defineProps<{
                         <Link
                             v-if="game.modes.includes('normal')"
                             :href="`/play/previous/${game.date}`"
-                            class="inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                            class="inline-flex items-center gap-1.5 rounded-md border-2 bg-white px-4 py-2 text-sm font-medium shadow-sm transition-colors dark:bg-gray-900"
+                            :class="isCompleted(game.date, 'normal')
+                                ? 'border-green-500 text-green-600 hover:bg-green-50 dark:border-green-500 dark:text-green-400 dark:hover:bg-green-950'
+                                : 'border-red-500 text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-950'"
                         >
-                            Play Normal
+                            <svg v-if="isCompleted(game.date, 'normal')" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            Normal
                         </Link>
                         <Link
                             v-if="game.modes.includes('hard')"
                             :href="`/play/previous/${game.date}/hard`"
-                            class="inline-flex items-center rounded-md border border-red-600 px-4 py-2 text-sm font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
+                            class="inline-flex items-center gap-1.5 rounded-md border-2 bg-white px-4 py-2 text-sm font-medium shadow-sm transition-colors dark:bg-gray-900"
+                            :class="isCompleted(game.date, 'hard')
+                                ? 'border-green-500 text-green-600 hover:bg-green-50 dark:border-green-500 dark:text-green-400 dark:hover:bg-green-950'
+                                : 'border-red-500 text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-950'"
                         >
-                            Play Hard
+                            <svg v-if="isCompleted(game.date, 'hard')" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            Hard
                         </Link>
                     </div>
                 </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { computed, ref, reactive, nextTick, watch } from 'vue';
+import { computed, ref, reactive, nextTick, watch, onMounted } from 'vue';
+import { saveGameState, loadGameState, type GuessLogEntry as StoredGuessLogEntry, type GameMode } from '@/composables/useGameState';
 
 type Card = {
     quantity: number;
@@ -17,6 +18,7 @@ const props = withDefaults(defineProps<{
     decklistUrl?: string | null;
     hardMode?: boolean;
     gameDate?: string;
+    gameDateKey?: string;
     isPreviousDay?: boolean;
 }>(), {
     hardMode: false,
@@ -113,13 +115,10 @@ const showWinModal = ref(false);
 const gaveUp = ref(false);
 const showGiveUpConfirm = ref(false);
 
-type GuessLogEntry = {
-    guess: string;
-    correct: boolean;
-    revealedCard?: string;
-    timestamp: Date;
-};
+// Re-export for local use since we import from composable
+type GuessLogEntry = StoredGuessLogEntry;
 const guessLog = ref<GuessLogEntry[]>([]);
+const restoredFromStorage = ref(false);
 
 const allCommandersRevealed = computed(() =>
     commanders.value.length > 0 && commanders.value.every((_, i) => revealedCommanders.has(i)),
@@ -130,6 +129,10 @@ const gameOver = computed(() => allCommandersRevealed.value || gaveUp.value);
 watch(allCommandersRevealed, (won) => {
     if (!won) return;
     revealAllCards();
+    // Save game state when won (only if not restored from storage)
+    if (!restoredFromStorage.value) {
+        saveCurrentGameState(true);
+    }
     setTimeout(() => {
         showWinModal.value = true;
     }, 1500);
@@ -153,6 +156,8 @@ function giveUp() {
     // Reveal all commanders
     commanders.value.forEach((_, i) => revealedCommanders.add(i));
     revealAllCards();
+    // Save game state when gave up
+    saveCurrentGameState(false);
     setTimeout(() => {
         showWinModal.value = true;
     }, 1500);
@@ -310,8 +315,8 @@ async function searchScryfall(query: string) {
             throw new Error('Scryfall search failed');
         }
         const data = await response.json();
-        const names = (data?.data ?? []).map((card: { name: string }) => card.name.split(' // ')[0]);
-    suggestionResults.value = Array.from(new Set(names)).slice(0, 20);
+        const names: string[] = (data?.data ?? []).map((card: { name: string }) => card.name.split(' // ')[0]);
+    suggestionResults.value = [...new Set(names)].slice(0, 20);
     } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
             return;
@@ -332,6 +337,44 @@ function selectSuggestion(name: string) {
 function sectionCardCount(cards: Card[]): number {
     return cards.reduce((sum, c) => sum + c.quantity, 0);
 }
+
+function saveCurrentGameState(won: boolean) {
+    if (!props.gameDateKey) return;
+    const mode: GameMode = props.hardMode ? 'hard' : 'normal';
+    saveGameState(props.gameDateKey, mode, {
+        completed: true,
+        won,
+        incorrectGuesses: incorrectGuesses.value,
+        guessLog: guessLog.value,
+    });
+}
+
+function restoreGameState() {
+    if (!props.gameDateKey) return;
+    const mode: GameMode = props.hardMode ? 'hard' : 'normal';
+    const saved = loadGameState(props.gameDateKey, mode);
+    
+    if (saved?.completed) {
+        restoredFromStorage.value = true;
+        incorrectGuesses.value = saved.incorrectGuesses;
+        guessLog.value = saved.guessLog;
+        
+        // Reveal all commanders
+        commanders.value.forEach((_, i) => revealedCommanders.add(i));
+        
+        // Reveal all cards
+        revealAllCards();
+        
+        // Set gave up state if they didn't win
+        if (!saved.won) {
+            gaveUp.value = true;
+        }
+    }
+}
+
+onMounted(() => {
+    restoreGameState();
+});
 
 function scryfallImageUrl(cardName: string): string {
     return `https://api.scryfall.com/cards/named?format=image&version=normal&exact=${encodeURIComponent(cardName)}`;
