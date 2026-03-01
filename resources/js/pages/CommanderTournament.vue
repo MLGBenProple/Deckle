@@ -55,14 +55,43 @@ const typeSections = computed(() => {
 
 const commanders = computed(() => props.decklist.Commanders ?? []);
 
+// Seeded PRNG (mulberry32) for deterministic randomness per game
+function createSeededRng(seed: number): () => number {
+    return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
+// Create a numeric seed from the game date and mode
+function hashSeed(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash;
+}
+
+const gameSeed = hashSeed(`${props.gameDate ?? 'default'}-${props.hardMode ? 'hard' : 'normal'}`);
+const seededRandom = createSeededRng(gameSeed);
+
+// Track which cards have been revealed in sequence for deterministic order
+let revealSequenceIndex = 0;
+let precomputedRevealOrder: string[] = [];
+
 // Hard mode: flatten all non-commander cards into a single shuffled array (computed once)
 function buildShuffledCards(): Card[] {
     const all: Card[] = [];
     for (const [key, cards] of Object.entries(props.decklist)) {
         if (key !== 'Commanders') all.push(...cards);
     }
+    // Use seeded shuffle
     for (let i = all.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(seededRandom() * (i + 1));
         [all[i], all[j]] = [all[j], all[i]];
     }
     return all;
@@ -160,11 +189,29 @@ function isCloseMatch(guess: string, target: string): boolean {
     return levenshtein(g, t) <= maxDist;
 }
 
-function pickRandomHiddenCard(): string | null {
+// Precompute the reveal order using seeded randomness (called once at init)
+function buildRevealOrder(): string[] {
     const source: Card[] = props.hardMode ? shuffledCards : typeSections.value.flatMap(([, cards]) => cards);
-    const hiddenCards = source.filter(card => !revealedCards.has(card.name)).map(card => card.name);
-    if (hiddenCards.length === 0) return null;
-    return hiddenCards[Math.floor(Math.random() * hiddenCards.length)];
+    const allNames = source.map(card => card.name);
+    // Fisher-Yates shuffle with seeded RNG
+    for (let i = allNames.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [allNames[i], allNames[j]] = [allNames[j], allNames[i]];
+    }
+    return allNames;
+}
+precomputedRevealOrder = buildRevealOrder();
+
+function pickRandomHiddenCard(): string | null {
+    // Return next unrevealed card from the precomputed sequence
+    while (revealSequenceIndex < precomputedRevealOrder.length) {
+        const candidate = precomputedRevealOrder[revealSequenceIndex];
+        revealSequenceIndex++;
+        if (!revealedCards.has(candidate)) {
+            return candidate;
+        }
+    }
+    return null;
 }
 
 function submitGuess() {
