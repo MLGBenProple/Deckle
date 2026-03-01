@@ -9,6 +9,55 @@ use Inertia\Inertia;
 class CommanderTournamentController extends Controller
 {
     /**
+     * Display a list of all previous daily games available to play.
+     */
+    public function previousDays()
+    {
+        $games = DailyGame::where('date', '<', today())
+            ->orderBy('date', 'desc')
+            ->get()
+            ->groupBy(fn ($game) => $game->date->format('Y-m-d'))
+            ->map(fn ($games, $date) => [
+                'date' => $date,
+                'formattedDate' => $games->first()->date->format('F j, Y'),
+                'modes' => $games->pluck('mode')->toArray(),
+            ])
+            ->values();
+
+        return Inertia::render('PreviousDays', [
+            'games' => $games,
+        ]);
+    }
+
+    /**
+     * Display a specific previous day's game.
+     */
+    public function showPreviousDay(DecklistService $decklistService, string $date, string $mode = 'normal')
+    {
+        $game = DailyGame::where('date', $date)
+            ->mode($mode)
+            ->firstOrFail();
+
+        $data = [
+            'tournamentName' => $game->tournament_name,
+            'tournamentId' => $game->tournament_id,
+            'playerName' => $game->player_name,
+            'playerStanding' => $game->player_standing,
+            'totalParticipants' => $game->total_participants,
+            'decklist' => $decklistService->sortSections($game->decklist),
+            'decklistUrl' => $game->decklist_url,
+            'gameDate' => $game->date->format('F j, Y'),
+            'isPreviousDay' => true,
+        ];
+
+        if ($mode === 'hard') {
+            $data['hardMode'] = true;
+        }
+
+        return Inertia::render('CommanderTournament', $data);
+    }
+
+    /**
      * Display the daily Commander tournament puzzle game in normal difficulty mode.
      */
     public function daily(DecklistService $decklistService)

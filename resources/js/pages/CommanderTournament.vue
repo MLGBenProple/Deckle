@@ -17,8 +17,10 @@ const props = withDefaults(defineProps<{
     decklistUrl?: string | null;
     hardMode?: boolean;
     gameDate?: string;
+    isPreviousDay?: boolean;
 }>(), {
     hardMode: false,
+    isPreviousDay: false,
 });
 
 const tournamentUrl = computed(() => 
@@ -359,18 +361,25 @@ function scryfallImageUrl(cardName: string): string {
                         Home
                     </Link>
                     <Link
-                        v-if="hardMode"
+                        v-if="!isPreviousDay && hardMode"
                         href="/play"
                         class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-emerald-600 shadow-sm ring-1 ring-inset ring-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-900 dark:text-emerald-400 dark:ring-emerald-500 dark:hover:bg-emerald-950 dark:hover:text-emerald-300"
                     >
                         Normal Mode
                     </Link>
                     <Link
-                        v-else
+                        v-if="!isPreviousDay && !hardMode"
                         href="/play/hard"
                         class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-rose-600 shadow-sm ring-1 ring-inset ring-rose-600 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:bg-gray-900 dark:text-rose-400 dark:ring-rose-500 dark:hover:bg-rose-950 dark:hover:text-rose-300"
                     >
                         Hard Mode
+                    </Link>
+                    <Link
+                        v-if="gameOver"
+                        href="/play/previous"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-violet-600 shadow-sm ring-1 ring-inset ring-violet-600 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-violet-400 dark:ring-violet-500 dark:hover:bg-violet-950 dark:hover:text-violet-300"
+                    >
+                        Previous Days
                     </Link>
                 </div>
             </div>
@@ -680,12 +689,20 @@ function scryfallImageUrl(cardName: string): string {
                         <span v-if="i < commanders.length - 1" class="text-sm font-medium text-gray-400 dark:text-gray-500">&amp;</span>
                     </template>
                 </div>
-                <button
-                    class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
-                    @click="showWinModal = false"
-                >
-                    View Decklist
-                </button>
+                <div class="flex flex-col items-center gap-3">
+                    <button
+                        class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                        @click="showWinModal = false"
+                    >
+                        View Decklist
+                    </button>
+                    <Link
+                        href="/play/previous"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-violet-600 shadow-sm ring-1 ring-inset ring-violet-600 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-violet-400 dark:ring-violet-500 dark:hover:bg-violet-950 dark:hover:text-violet-300"
+                    >
+                        Play Previous Days &rarr;
+                    </Link>
+                </div>
             </div>
         </div>
     </Transition>
@@ -703,12 +720,20 @@ function scryfallImageUrl(cardName: string): string {
                         {{ card.name }}
                     </span>
                 </div>
-                <button
-                    class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
-                    @click="showWinModal = false"
-                >
-                    View Decklist
-                </button>
+                <div class="flex flex-col items-center gap-3">
+                    <button
+                        class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                        @click="showWinModal = false"
+                    >
+                        View Decklist
+                    </button>
+                    <Link
+                        href="/play/previous"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-violet-600 shadow-sm ring-1 ring-inset ring-violet-600 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-violet-400 dark:ring-violet-500 dark:hover:bg-violet-950 dark:hover:text-violet-300"
+                    >
+                        Play Previous Days &rarr;
+                    </Link>
+                </div>
             </div>
         </div>
     </Transition>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 
 function startGame() {
@@ -50,6 +50,15 @@ function startHardMode() {
                 >
                     Hard Mode
                 </button>
+            </div>
+
+            <div class="mt-6">
+                <Link
+                    href="/play/previous"
+                    class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-violet-600 shadow-sm ring-1 ring-inset ring-violet-600 hover:bg-violet-50 hover:text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-900 dark:text-violet-400 dark:ring-violet-500 dark:hover:bg-violet-950 dark:hover:text-violet-300"
+                >
+                    Play Previous Days &rarr;
+                </Link>
             </div>
         </div>
     </div>
